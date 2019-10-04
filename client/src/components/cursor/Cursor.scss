@@ -1,0 +1,21 @@
+.cursor {
+    height: 14px;
+    border-right: 2px #ccc solid;
+    width: 2px;
+    margin-top: 2px;
+    animation: flash 1s infinite step-end;
+}
+
+@keyframes flash {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1.0;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
