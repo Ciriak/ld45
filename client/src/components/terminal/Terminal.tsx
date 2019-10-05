@@ -252,6 +252,12 @@ export default class Terminal extends React.Component<any, IState> {
         })
     }
 
+    hideImage = () => {
+        this.setState({
+            imageLoaded: false
+        })
+    }
+
     handleEnterKey = (event: KeyboardEvent) => {
 
         // stop if not enter key
@@ -300,7 +306,9 @@ export default class Terminal extends React.Component<any, IState> {
                     waitingForImageUrl: true
                 })
                 input.value = "";
+                this.clear();
                 this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
+                this.addUserEntry("Or just immediatly press [↵] to skip");
             }
             return;
 
@@ -521,7 +529,19 @@ export default class Terminal extends React.Component<any, IState> {
 
 
         return new Promise(async (resolve) => {
-
+            await this.addEntry("... Booting ...");
+            await this.addEntry(".");
+            await this.addEntry(".");
+            await this.wait(2000);
+            await this.addEntry("Made by Cyriaque DELAUNAY for the 45th Ludum Dare");
+            this.setImageUrl("https://i.imgur.com/OVWg8TH.jpg");
+            await this.wait(3000);
+            this.hideImage();
+            await this.wait(1000);
+            this.clear();
+            await this.wait(1000);
+            await this.addEntry("Let's begin your story ...");
+            await this.wait(2000);
             await this.connectToApi();
 
         });
@@ -574,7 +594,10 @@ export default class Terminal extends React.Component<any, IState> {
                     <div className="img-container" style={{ backgroundImage: "url(" + imageUrl + ")" }}></div>
                 </div>
 
+
+
                 <Cursor active={this.state.cursorActive} />
+
             </div>
         )
     }
