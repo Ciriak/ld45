@@ -396,13 +396,15 @@ export default class Terminal extends React.Component<any, IState> {
             return;
         }
 
+        event.preventDefault();
+
         // history is too short
         if (history.length < 2) {
             return;
         }
 
         //go back into the history
-        await this.requestChoice(history[history.length - 2].id);
+        await this.requestChoice(history[history.length - 2].id, true);
     }
 
     /**
@@ -535,11 +537,17 @@ export default class Terminal extends React.Component<any, IState> {
 
     }
 
-    requestChoice = (id: string) => {
+    requestChoice = (id: string, cleanHistory?: boolean) => {
 
         return new Promise(async (resolve) => {
 
             this.clear();
+
+            // remove an history entry if this is from a go back
+            if (cleanHistory) {
+                history.pop();  //remove last entry
+            }
+
 
             axios.get(config.apiAddress + "/choice?id=" + id)
                 .then(async res => {
