@@ -3,7 +3,11 @@ export default interface ITerminalEntry {
     type?: any;
     date?: Date;
     /**
-     * True if should write instantly
+     * Time for the text to be written
      */
-    instant?: boolean;
+    duration?: number;
+    /**
+     * Wether or the the entry was added by the player
+     */
+    userEntry?: boolean;
 }

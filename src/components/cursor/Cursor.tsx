@@ -17,9 +17,12 @@ export default class Cursor extends React.Component<IProps, IState> {
         }
     }
     render = () => {
-
+        let classes = "cursor";
+        if (this.state.active) {
+            classes += " active";
+        }
         return (
-            <div className="cursor"></div>
+            <div className={classes}></div>
         )
     }
 }

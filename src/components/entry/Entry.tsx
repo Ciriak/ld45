@@ -2,8 +2,6 @@ import React from 'react';
 import ITerminalEntry from '../../interfaces/TerminalEntry';
 import "./Entry.scss";
 
-const typingDelay = 50;
-
 interface IProps {
     data: ITerminalEntry;
     isLast?: boolean;
@@ -30,11 +28,17 @@ export default class Entry extends React.Component<IProps, IState> {
     }
 
     initTyping = () => {
-        let timeoutValue = 0;
-        let writeDelay = typingDelay;
+        let timeoutValue = this.state.entry.duration;
+        if (!timeoutValue) {
+            timeoutValue = 1500;
+        }
+
+
+
+        let writeDelay = timeoutValue / this.state.entry.value.length;
 
         // 0 timeout = instant
-        if (this.state.entry.instant) {
+        if (this.state.entry.duration) {
             writeDelay = 0;
         }
         for (const letter of this.state.entry.value) {
@@ -50,9 +54,12 @@ export default class Entry extends React.Component<IProps, IState> {
     }
 
     render = () => {
-
+        let classes = "terminal-entry";
+        if (this.state.entry.userEntry) {
+            classes += " user-entry";
+        }
         return (
-            <div className="terminal-entry">
+            <div className={classes}>
                 <span className="value">
                     {this.state.renderText}
                 </span>

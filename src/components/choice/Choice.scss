@@ -1,0 +1,13 @@
+.choice {
+    color: #fff;
+    margin-left: 10px;
+
+    &.active {
+        color: #4AF626;
+
+        .choice-string {
+            border-bottom: 1px #4AF626 solid;
+        }
+
+    }
+}
