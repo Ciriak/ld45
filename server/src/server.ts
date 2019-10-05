@@ -72,8 +72,11 @@ async function ensureFirstChoiceExist(db: Db) {
         id: "default"
     });
 
-    console.warn("Missing default choice, it will be created")
+
     if (!defaultChoice) {
+
+        console.warn("Missing default choice, it will be created")
+
         const query = {
             id: "default",
             date: new Date(),

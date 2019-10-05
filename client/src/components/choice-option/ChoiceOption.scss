@@ -1,6 +1,10 @@
-.choice {
+.option {
     color: #fff;
     margin-left: 10px;
+
+    &.missing-entry {
+        color: red;
+    }
 
     &.active {
         color: #4AF626;

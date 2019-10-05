@@ -5,21 +5,26 @@ import Entry from '../entry/Entry';
 import "./Terminal.scss"
 import Cursor from '../cursor/Cursor';
 import IPlayer from '../../interfaces/Player';
-import Choice from '../choice/Choice';
+import ChoiceOption from '../choice-option/ChoiceOption';
 import axios from 'axios';
+import * as config from "../../config.json";
 
 /**
  * Used to skip all timers
  */
-const debugInstant = true;
+const debugInstant = false;
+let input: HTMLInputElement;
 
 interface IState {
     entries: ITerminalEntry[],
     player: IPlayer;
     cursorActive: boolean;
-    choices: IChoice[],
-    selectedChoiceIndex: number;
+    selectedOptionIndex: number;
+    choice: IChoice;
     dump?: any;
+    optionInputActive: boolean;
+    waitingForLabel: boolean;
+    waitingForOptionLabel: boolean;
 }
 
 export default class Terminal extends React.Component<any, IState> {
@@ -28,41 +33,21 @@ export default class Terminal extends React.Component<any, IState> {
         this.state = {
             entries: [],
             player: {},
-            cursorActive: true,
-            choices: [],
-            selectedChoiceIndex: 0
+            cursorActive: false,
+            optionInputActive: false,
+            waitingForOptionLabel: false,
+            waitingForLabel: false,
+            choice: {
+                id: "default",
+                optionLabel: "",
+                label: "I start with nothing",
+                active: false,
+                options: []
+            },
+            selectedOptionIndex: 0
         }
     }
-    render = () => {
 
-        const entries = [];
-        const choices = [];
-        for (let entryIndex = 0; entryIndex < this.state.entries.length; entryIndex++) {
-            const entry = this.state.entries[entryIndex];
-            entries.push(<Entry data={entry} key={entryIndex} isLast={entryIndex === this.state.entries.length - 1} />);
-        }
-
-        for (let choiceIndex = 0; choiceIndex < this.state.choices.length; choiceIndex++) {
-            const choice = this.state.choices[choiceIndex];
-
-            choice.active = false;
-            if (choiceIndex === this.state.selectedChoiceIndex) {
-                choice.active = true;
-            }
-            choices.push(<Choice data={choice} key={choiceIndex} />);
-        }
-
-
-        return (
-            <div className="terminal">
-                {entries}
-                <div className="choices-container">
-                    {choices}
-                </div>
-                <Cursor active={this.state.cursorActive} />
-            </div>
-        )
-    }
 
     /**
      * Add an entry to the temrinal
@@ -156,54 +141,42 @@ export default class Terminal extends React.Component<any, IState> {
         });
     }
 
-    choice = (choiceStrings: string[], variableName?: string) => {
+    /**
+     * Set the current choice
+     */
+    choice = (choice: IChoice) => {
         return new Promise((resolve) => {
 
-            // use a dump variable for the state
-            if (!variableName) {
-                variableName = "dump";
-            }
+            const emptyOption = {
+                id: 'null',
+                active: false,
+                label: "",
+                optionLabel: "[MISSING ENTRY]",
+                options: [],
+                missingEntry: true
+            };
 
-            // add the choices to the state
-            const choices: IChoice[] = [];
-            for (let choiceIndex = 0; choiceIndex < choiceStrings.length; choiceIndex++) {
-                const choiceString = choiceStrings[choiceIndex];
-                choices.push({
-                    active: false,
-                    value: choiceString,
-                    variableName: variableName
-                });
-                this.setState({
-                    choices: choices
-                })
-            }
-
-            window.addEventListener('keydown', (event) => {
-                if (event.key === "Enter") {
-                    resolve();
+            // add empty options if needed
+            for (let optionIndex = 0; optionIndex < 3; optionIndex++) {
+                const option = choice.options[optionIndex];
+                if (!option) {
+                    choice.options.push(emptyOption);
                 }
+            }
+
+            this.setState({
+                choice: choice
             });
+
+            resolve();
 
         });
     }
 
-    /**
-     * Get use location
-     */
-    retrieveLocation = () => {
-        return new Promise(async (resolve) => {
-
-            axios.get(`http://ip-api.com/json`)
-                .then(res => {
-                    debugger
-                    this.setPlayerValue("city", res.data.city)
-                    this.setPlayerValue("country", res.data.country);
-                    resolve();
-                }).catch((err) => {
-                    resolve();
-                })
+    clear = () => {
+        this.setState({
+            entries: []
         });
-
     }
 
     /**
@@ -218,32 +191,111 @@ export default class Terminal extends React.Component<any, IState> {
     }
 
     handleEnterKey = (event: KeyboardEvent) => {
-        event.preventDefault();
+
         // stop if not enter key
         if (event.key !== "Enter") {
             return;
         }
 
+        event.preventDefault();
+
         // if we are waiting for a choice
-        if (this.state.choices.length > 0) {
-            this.setCurrentChoice();
+        if (this.state.choice.options.length > 0) {
+            this.selectCurrentOption();
         }
+
+        if (this.state.waitingForOptionLabel) {
+            if (this.isValidInput(input.value)) {
+                const choice = this.state.choice;
+                choice.optionLabel = input.value
+                this.setState({
+                    choice: choice,
+                    waitingForLabel: true,
+                    waitingForOptionLabel: false
+                });
+
+                this.clear();
+                input.value = "";
+                this.addEntry(this.state.choice.optionLabel + " , what happend next ?");
+
+                return;
+
+            }
+        }
+
+        // if valid, update the label
+        if (this.state.waitingForLabel) {
+
+
+
+            if (this.isValidInput(input.value)) {
+                const choice = this.state.choice;
+                choice.label = input.value;
+
+                this.setState({
+                    choice: choice,
+                    waitingForLabel: false,
+                    waitingForOptionLabel: false
+                })
+                input.value = "";
+                // we can send the new choice
+                this.sendNewChoice(this.state.choice);
+            }
+            return;
+
+        }
+
+
+    }
+
+    /**
+     * Send a new choice
+     */
+    sendNewChoice = (choice: IChoice) => {
+        axios.post(config.apiAddress + "/choice", null, {
+            params: choice
+        }).then(async (res) => {
+            console.log(res);
+            this.setState({
+                waitingForOptionLabel: false,
+                waitingForLabel: false,
+                optionInputActive: false
+            });
+            this.clear();
+            await this.wait(2000);
+            await this.addEntry("...");
+            await this.wait(2000);
+            await this.addEntry("And this is where your story end");
+        }).catch((err) => {
+            console.log(err);
+        });
     }
 
     handleChoiceKeys = (event: KeyboardEvent) => {
-        event.preventDefault();
-        let valueIndex = this.state.selectedChoiceIndex;
-        const numOfChoices = this.state.choices.length;
+
+        let valueIndex = this.state.selectedOptionIndex;
+        const numOfOptions = this.state.choice.options.length;
 
         switch (event.key) {
             case "Tab":
                 valueIndex++;
+                event.preventDefault();
+                break;
+            case "ArrowUp":
+                valueIndex--;
+                event.preventDefault();
                 break;
             case "ArrowLeft":
                 valueIndex--;
+                event.preventDefault();
+                break;
+            case "ArrowDown":
+                valueIndex++;
+                event.preventDefault();
                 break;
             case "ArrowRight":
                 valueIndex++;
+                event.preventDefault();
                 break;
             default:
                 break;
@@ -252,43 +304,87 @@ export default class Terminal extends React.Component<any, IState> {
         // go to the end if we got below first item
         if (valueIndex < 0) {
 
-            valueIndex = numOfChoices - 1;
+            valueIndex = numOfOptions - 1;
         }
 
         // return of the begining if we get above last value
-        if (valueIndex > numOfChoices - 1) {
+        if (valueIndex > numOfOptions - 1) {
             valueIndex = 0;
         }
 
         this.setState({
-            selectedChoiceIndex: valueIndex
+            selectedOptionIndex: valueIndex
         });
     }
 
     /**
      * Set the current highlighted choice as the value
      */
-    setCurrentChoice = () => {
-        const selectedChoice = this.state.choices[this.state.selectedChoiceIndex];
-        // apply the state variable
-        const player = this.state.player;
-        // update the state with the key / val
-        player[selectedChoice.variableName] = selectedChoice.value;
-        console.log("[" + selectedChoice.variableName + "] => " + selectedChoice.value + "");
+    selectCurrentOption = () => {
 
-        if (selectedChoice.variableName) {
-            this.setState({
-                player: player
-            });
-            // reset the choices list
+        return new Promise(async (resolve) => {
 
-            this.addUserEntry(selectedChoice.value);
+            const option = this.state.choice.options[this.state.selectedOptionIndex];
 
-            this.setState({
-                choices: [],
-                selectedChoiceIndex: 0
-            });
+            // if this is a missing entry, the user will be asked to use his imagination :)
+            if (option.missingEntry) {
+                this.createOption();
+            }
+            else {
+                this.requestChoice(option.id);
+            }
+
+
+        });
+    }
+
+    /**
+     * Called when the user will create a new option
+     */
+    createOption = async () => {
+        this.clear();
+        await this.addEntry("Write what you do :");
+        this.enableCursor();
+
+        // create a new choice object
+        const newChoice: IChoice = {
+            id: "new",
+            active: false,
+            label: "",
+            optionLabel: "",
+            options: [],
+            parentId: this.state.choice.id
         }
+        this.setState({
+            choice: newChoice,
+            optionInputActive: true,
+            waitingForOptionLabel: true
+        });
+        input = document.getElementById("option-input") as HTMLInputElement;
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+
+    }
+
+    requestChoice = (id: string) => {
+
+        return new Promise(async (resolve) => {
+            axios.get(config.apiAddress + "/choice?id=" + id)
+                .then(async res => {
+                    const choice: IChoice = res.data;
+                    this.clear();
+                    await this.addEntry(choice.label);
+                    await this.wait(2000);
+                    await this.addEntry("What do i do ?");
+                    await this.wait(1000);
+                    await this.choice(choice);
+
+                }).catch((err) => {
+                    resolve();
+                })
+        });
     }
 
     /**
@@ -298,57 +394,77 @@ export default class Terminal extends React.Component<any, IState> {
         this.addEntry(value, 0, true);
     }
 
+    connectToApi = () => {
+        return new Promise(async (resolve) => {
+
+            await this.requestChoice("default");
+        });
+    }
+
+    isValidInput = (value: string) => {
+        if (value.length < 5) {
+            return false;
+        }
+
+        if (value.length > 200) {
+            return false;
+        }
+
+        if (typeof value !== "string") {
+            return false;
+        }
+
+        return true;
+    }
+
     Play = () => {
 
 
         console.log("play");
+
         return new Promise(async (resolve) => {
 
-            await this.wait(8000);
-
-            await this.addEntry("...");
-
-            await this.retrieveLocation();
-
-
-            await this.wait(4000);
-
-            await this.addEntry(`Is anyone there ? ...`);
-
-            await this.choice(["Hello ?"]);
-
-            await this.wait(1500);
-
-            await this.addEntry(`Nice to meet you `);
-
-            // city not available
-            if (!this.state.player.city) {
-                await this.wait(1500);
-                await this.addEntry(`I have a question ...`);
-
-                await this.choice(["Go ahead"]);
-
-                await this.addEntry(`Why would you use and adblocker on a Ludum Dare game ?`);
-
-                await this.choice(["Why not.", "Why that question ?", "askforAdBlocker"]);
-
-                if (this.state.player.askForAdBlocker === "Why that question ?") {
-                    await this.wait(1000);
-                    await this.addEntry(`I ask the questions here`);
-                }
-
-            }
-
-            await this.addEntry(`How is it going on in ${this.state.player.city} ?`)
-
-            await this.choice(["It's fine", ""]);
-
-
-            await this.wait(1000);
-
-
+            await this.connectToApi();
 
         });
 
+    }
+
+    render = () => {
+        console.log("render")
+        const entries = [];
+        const options = [];
+        for (let entryIndex = 0; entryIndex < this.state.entries.length; entryIndex++) {
+            const entry = this.state.entries[entryIndex];
+            entries.push(<Entry data={entry} key={entryIndex} isLast={entryIndex === this.state.entries.length - 1} />);
+        }
+
+        for (let optionIndex = 0; optionIndex < this.state.choice.options.length; optionIndex++) {
+            console.log("render", this.state.choice.options)
+            const option = this.state.choice.options[optionIndex];
+
+            option.active = false;
+            if (optionIndex === this.state.selectedOptionIndex) {
+                option.active = true;
+            }
+            options.push(<ChoiceOption data={option} key={optionIndex} />);
+        }
+
+
+        return (
+            <div className="terminal">
+                {entries}
+                <div className="choice-container">
+                    {options}
+                </div>
+                {this.state.optionInputActive &&
+                    <div className="input-container">
+                        <input type="text" id="option-input" maxLength={200} minLength={5} autoCorrect="false" autoComplete="false" />
+                    </div>
+                }
+
+                <Cursor active={this.state.cursorActive} />
+            </div>
+        )
     }
 }
