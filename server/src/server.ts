@@ -80,7 +80,7 @@ async function ensureFirstChoiceExist(db: Db) {
         const query = {
             id: "default",
             date: new Date(),
-            label: "You start with nothing",
+            label: "I start with nothing",
             optionLabel: "",
             parentId: ""
         }

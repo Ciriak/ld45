@@ -30,7 +30,7 @@ export default class Entry extends React.Component<IProps, IState> {
     initTyping = () => {
         let timeoutValue = this.state.entry.duration;
         if (!timeoutValue) {
-            timeoutValue = 1500;
+            timeoutValue = 500;
         }
 
 

@@ -13,12 +13,14 @@ interface IState {
 export default class ChoiceOption extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
+
         this.state = {
             option: props.data,
         }
     }
 
     static getDerivedStateFromProps = (props: IProps, state: IState) => {
+
         if (props.data) {
             return {
                 option: props.data

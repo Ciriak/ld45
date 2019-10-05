@@ -25,6 +25,7 @@ interface IState {
     optionInputActive: boolean;
     waitingForLabel: boolean;
     waitingForOptionLabel: boolean;
+    displayChoices: boolean;
 }
 
 export default class Terminal extends React.Component<any, IState> {
@@ -37,6 +38,7 @@ export default class Terminal extends React.Component<any, IState> {
             optionInputActive: false,
             waitingForOptionLabel: false,
             waitingForLabel: false,
+            displayChoices: false,
             choice: {
                 id: "default",
                 optionLabel: "",
@@ -58,7 +60,7 @@ export default class Terminal extends React.Component<any, IState> {
      */
     addEntry = (value: string, duration?: number, userEntry?: boolean) => {
         return new Promise((resolve) => {
-            let appliedDuration = 1500;
+            let appliedDuration = 500;
             if (duration) {
                 appliedDuration = duration;
             }
@@ -91,7 +93,7 @@ export default class Terminal extends React.Component<any, IState> {
 
             setTimeout(() => {
                 resolve();
-            }, delay);
+            }, delay + 500);
 
         });
 
@@ -121,10 +123,17 @@ export default class Terminal extends React.Component<any, IState> {
         window.addEventListener('keydown', this.handleChoiceKeys);
 
 
-
         // launch the game
         this.Play();
 
+
+    }
+
+    // focus input on terminal click
+    handleTerminalClick = () => {
+        if (input) {
+            input.focus();
+        }
 
     }
 
@@ -148,10 +157,10 @@ export default class Terminal extends React.Component<any, IState> {
         return new Promise((resolve) => {
 
             const emptyOption = {
-                id: 'null',
+                id: 'new',
                 active: false,
                 label: "",
-                optionLabel: "[MISSING ENTRY]",
+                optionLabel: "[YOU DECIDE]",
                 options: [],
                 missingEntry: true
             };
@@ -159,13 +168,17 @@ export default class Terminal extends React.Component<any, IState> {
             // add empty options if needed
             for (let optionIndex = 0; optionIndex < 3; optionIndex++) {
                 const option = choice.options[optionIndex];
+
                 if (!option) {
-                    choice.options.push(emptyOption);
+                    emptyOption.id = emptyOption.id + "-" + optionIndex;
+                    // prevent duplicate reference
+                    choice.options.push(JSON.parse(JSON.stringify(emptyOption)));
                 }
             }
 
             this.setState({
-                choice: choice
+                choice: choice,
+                displayChoices: true
             });
 
             resolve();
@@ -264,8 +277,7 @@ export default class Terminal extends React.Component<any, IState> {
             this.clear();
             await this.wait(2000);
             await this.addEntry("...");
-            await this.wait(2000);
-            await this.addEntry("And this is where your story end");
+            this.createOption();
         }).catch((err) => {
             console.log(err);
         });
@@ -323,6 +335,7 @@ export default class Terminal extends React.Component<any, IState> {
     selectCurrentOption = () => {
 
         return new Promise(async (resolve) => {
+            this.clear();
 
             const option = this.state.choice.options[this.state.selectedOptionIndex];
 
@@ -334,6 +347,10 @@ export default class Terminal extends React.Component<any, IState> {
                 this.requestChoice(option.id);
             }
 
+            this.setState({
+                displayChoices: false
+            })
+
 
         });
     }
@@ -343,7 +360,8 @@ export default class Terminal extends React.Component<any, IState> {
      */
     createOption = async () => {
         this.clear();
-        await this.addEntry("Write what you do :");
+        const oldChoiceLabel = this.state.choice.label;
+        await this.addEntry(oldChoiceLabel + " , what do i do :");
         this.enableCursor();
 
         // create a new choice object
@@ -376,9 +394,9 @@ export default class Terminal extends React.Component<any, IState> {
                     const choice: IChoice = res.data;
                     this.clear();
                     await this.addEntry(choice.label);
-                    await this.wait(2000);
+
                     await this.addEntry("What do i do ?");
-                    await this.wait(1000);
+
                     await this.choice(choice);
 
                 }).catch((err) => {
@@ -445,6 +463,7 @@ export default class Terminal extends React.Component<any, IState> {
 
             option.active = false;
             if (optionIndex === this.state.selectedOptionIndex) {
+
                 option.active = true;
             }
             options.push(<ChoiceOption data={option} key={optionIndex} />);
@@ -452,11 +471,14 @@ export default class Terminal extends React.Component<any, IState> {
 
 
         return (
-            <div className="terminal">
+            <div className="terminal" onClick={this.handleTerminalClick}>
                 {entries}
-                <div className="choice-container">
-                    {options}
-                </div>
+                {this.state.displayChoices &&
+                    <div className="choice-container">
+                        {options}
+                    </div>
+                }
+
                 {this.state.optionInputActive &&
                     <div className="input-container">
                         <input type="text" id="option-input" maxLength={200} minLength={5} autoCorrect="false" autoComplete="false" />
