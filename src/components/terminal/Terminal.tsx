@@ -131,6 +131,11 @@ export default class Terminal extends React.Component<any, IState> {
         // Listen for enter key press
         window.addEventListener('keydown', this.handleEnterKey);
 
+        // Listen for enter key press
+        window.addEventListener('keydown', this.handleChoiceKeys);
+
+
+
         // launch the game
         this.Play();
 
@@ -183,6 +188,7 @@ export default class Terminal extends React.Component<any, IState> {
 
 
     handleEnterKey = (event: KeyboardEvent) => {
+        event.preventDefault();
         // stop if not enter key
         if (event.key !== "Enter") {
             return;
@@ -192,6 +198,38 @@ export default class Terminal extends React.Component<any, IState> {
         if (this.state.choices.length > 0) {
             this.setCurrentChoice();
         }
+    }
+
+    handleChoiceKeys = (event: KeyboardEvent) => {
+        event.preventDefault();
+        let valueIndex = this.state.selectedChoiceIndex;
+        const numOfChoices = this.state.choices.length;
+
+        switch (event.key) {
+            case "Tab":
+                valueIndex++;
+                break;
+            case "ArrowLeft":
+                valueIndex--;
+            case "ArrowRight":
+                valueIndex++;
+            default:
+                break;
+        }
+
+        // go to the end if we got below first item
+        if (valueIndex < 0) {
+            valueIndex = numOfChoices - 1;
+        }
+
+        // return of the begining if we get above last value
+        if (valueIndex > numOfChoices - 1) {
+            valueIndex = 0;
+        }
+
+        this.setState({
+            selectedChoiceIndex: valueIndex
+        });
     }
 
     /**
