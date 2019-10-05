@@ -14,6 +14,7 @@
     font-weight: bold;
     font-size: 16px;
     cursor: default;
+    overflow: hidden;
 
     input {
         border: none;
@@ -24,6 +25,77 @@
         font-size: 16px;
         font-weight: bold;
         width: 100%;
+    }
+
+    .terminal-img-container {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 40%;
+        height: 100%;
+        filter: grayscale(1);
+        opacity: 0;
+
+        &.loaded {
+
+            animation-name: imgAppear;
+            animation-duration: 1s;
+            animation-fill-mode: forwards;
+            animation-timing-function: steps(5, end);
+        }
+
+        &:not(.loaded) {
+            animation-name: imgDisapear;
+            animation-duration: 1s;
+            animation-fill-mode: forwards;
+            animation-timing-function: steps(5, end);
+        }
+
+        @keyframes imgAppear {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1.0;
+            }
+        }
+
+        @keyframes imgDisapear {
+            0% {
+                opacity: 1.0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        img {
+            opacity: 0;
+        }
+
+        .mask {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            background-image: url('../../mask.png')
+        }
+
+        background-repeat:repeat;
+
+        .img-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+        }
+
     }
 
 }

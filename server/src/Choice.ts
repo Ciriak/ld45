@@ -126,7 +126,8 @@ export default class Choice implements IChoice {
             parentId: this.parentId,
             label: this.label,
             optionLabel: this.optionLabel,
-            options: options
+            options: options,
+            imageUrl: this.imageUrl
         }
     }
 

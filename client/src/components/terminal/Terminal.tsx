@@ -9,6 +9,13 @@ import ChoiceOption from '../choice-option/ChoiceOption';
 import axios from 'axios';
 import * as config from "../../config.json";
 
+const nextSentencesStr = [
+    "What do i do ?",
+    "What happend next ?",
+    "What will happend ?",
+    "Choose what happend next :"
+]
+
 /**
  * Used to skip all timers
  */
@@ -152,6 +159,10 @@ export default class Terminal extends React.Component<any, IState> {
 
     }
 
+    randomNextSentence = () => {
+        return nextSentencesStr[Math.floor(Math.random() * nextSentencesStr.length)]
+    }
+
     wait = (delay: number) => {
         // debug
         if (debugInstant) {
@@ -190,6 +201,13 @@ export default class Terminal extends React.Component<any, IState> {
                     choice.options.push(JSON.parse(JSON.stringify(emptyOption)));
                 }
             }
+
+            //set the image if needed
+
+            if (choice.imageUrl) {
+                this.setImageUrl(choice.imageUrl);
+            }
+
 
             this.setState({
                 choice: choice,
@@ -261,7 +279,7 @@ export default class Terminal extends React.Component<any, IState> {
 
                 this.clear();
                 input.value = "";
-                this.addEntry(this.state.choice.optionLabel + " , what happend next ?");
+                this.addEntry(this.state.choice.optionLabel + " , " + this.randomNextSentence());
 
                 return;
 
@@ -291,7 +309,17 @@ export default class Terminal extends React.Component<any, IState> {
         // if valid, update the label
         if (this.state.waitingForImageUrl) {
 
-
+            //alow empty input value
+            if (!input.value || input.value === "") {
+                // we can send the new choice
+                this.sendNewChoice(this.state.choice);
+                this.setState({
+                    waitingForLabel: false,
+                    waitingForOptionLabel: false,
+                    waitingForImageUrl: false
+                });
+                return;
+            }
 
             if (this.isValidInput(input.value)) {
                 const choice = this.state.choice;
@@ -400,6 +428,7 @@ export default class Terminal extends React.Component<any, IState> {
             }
 
             this.setState({
+                imageLoaded: false,
                 displayChoices: false
             })
 
@@ -413,7 +442,7 @@ export default class Terminal extends React.Component<any, IState> {
     createOption = async () => {
         this.clear();
         const oldChoiceLabel = this.state.choice.label;
-        await this.addEntry(oldChoiceLabel + " , what do i do :");
+        await this.addEntry(oldChoiceLabel + " , " + this.randomNextSentence());
         this.enableCursor();
 
         // create a new choice object
@@ -447,7 +476,7 @@ export default class Terminal extends React.Component<any, IState> {
                     this.clear();
                     await this.addEntry(choice.label);
 
-                    await this.addEntry("What do i do ?");
+                    await this.addEntry(this.randomNextSentence());
 
                     await this.choice(choice);
 
@@ -502,6 +531,11 @@ export default class Terminal extends React.Component<any, IState> {
     render = () => {
         const entries = [];
         const options = [];
+        const imageUrl = this.state.imageUrl;
+        let imageContainerClasses = "terminal-img-container";
+        if (this.state.imageLoaded) {
+            imageContainerClasses += " loaded";
+        }
         for (let entryIndex = 0; entryIndex < this.state.entries.length; entryIndex++) {
             const entry = this.state.entries[entryIndex];
             entries.push(<Entry data={entry} key={entryIndex} isLast={entryIndex === this.state.entries.length - 1} />);
@@ -530,9 +564,15 @@ export default class Terminal extends React.Component<any, IState> {
 
                 {this.state.optionInputActive &&
                     <div className="input-container">
-                        <input type="text" id="option-input" maxLength={200} minLength={5} autoCorrect="false" autoComplete="false" />
+                        <input type="text" id="option-input" maxLength={200} minLength={5} autoCorrect="false" autoComplete="false" onChange={this.handleInputValueChange} />
                     </div>
                 }
+
+                <div className={imageContainerClasses}>
+                    <div className="mask"></div>
+                    <img src={imageUrl} alt="pic" onLoad={this.handleImageLoaded} />
+                    <div className="img-container" style={{ backgroundImage: "url(" + imageUrl + ")" }}></div>
+                </div>
 
                 <Cursor active={this.state.cursorActive} />
             </div>
