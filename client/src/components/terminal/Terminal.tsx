@@ -6,6 +6,7 @@ import "./Terminal.scss"
 import Cursor from '../cursor/Cursor';
 import IPlayer from '../../interfaces/Player';
 import Choice from '../choice/Choice';
+import axios from 'axios';
 
 /**
  * Used to skip all timers
@@ -27,7 +28,7 @@ export default class Terminal extends React.Component<any, IState> {
         this.state = {
             entries: [],
             player: {},
-            cursorActive: false,
+            cursorActive: true,
             choices: [],
             selectedChoiceIndex: 0
         }
@@ -177,7 +178,7 @@ export default class Terminal extends React.Component<any, IState> {
                 })
             }
 
-            const listener = window.addEventListener('keydown', (event) => {
+            window.addEventListener('keydown', (event) => {
                 if (event.key === "Enter") {
                     resolve();
                 }
@@ -186,6 +187,35 @@ export default class Terminal extends React.Component<any, IState> {
         });
     }
 
+    /**
+     * Get use location
+     */
+    retrieveLocation = () => {
+        return new Promise(async (resolve) => {
+
+            axios.get(`http://ip-api.com/json`)
+                .then(res => {
+                    debugger
+                    this.setPlayerValue("city", res.data.city)
+                    this.setPlayerValue("country", res.data.country);
+                    resolve();
+                }).catch((err) => {
+                    resolve();
+                })
+        });
+
+    }
+
+    /**
+     * Set a player value
+     */
+    setPlayerValue = (key: string, value: any) => {
+        const player = this.state.player;
+        player[key] = value;
+        this.setState({
+            player: player
+        });
+    }
 
     handleEnterKey = (event: KeyboardEvent) => {
         event.preventDefault();
@@ -211,14 +241,17 @@ export default class Terminal extends React.Component<any, IState> {
                 break;
             case "ArrowLeft":
                 valueIndex--;
+                break;
             case "ArrowRight":
                 valueIndex++;
+                break;
             default:
                 break;
         }
 
         // go to the end if we got below first item
         if (valueIndex < 0) {
+
             valueIndex = numOfChoices - 1;
         }
 
@@ -238,13 +271,15 @@ export default class Terminal extends React.Component<any, IState> {
     setCurrentChoice = () => {
         const selectedChoice = this.state.choices[this.state.selectedChoiceIndex];
         // apply the state variable
-        const updateObj: any = {};
+        const player = this.state.player;
         // update the state with the key / val
-        updateObj[selectedChoice.variableName] = selectedChoice.value;
+        player[selectedChoice.variableName] = selectedChoice.value;
         console.log("[" + selectedChoice.variableName + "] => " + selectedChoice.value + "");
 
         if (selectedChoice.variableName) {
-            this.setState(updateObj);
+            this.setState({
+                player: player
+            });
             // reset the choices list
 
             this.addUserEntry(selectedChoice.value);
@@ -264,21 +299,54 @@ export default class Terminal extends React.Component<any, IState> {
     }
 
     Play = () => {
+
+
         console.log("play");
         return new Promise(async (resolve) => {
 
             await this.wait(8000);
 
             await this.addEntry("...");
+
+            await this.retrieveLocation();
+
+
             await this.wait(4000);
 
-            await this.addEntry("Is anyone there ? ...");
-
+            await this.addEntry(`Is anyone there ? ...`);
 
             await this.choice(["Hello ?"]);
 
-            await this.addEntry("Hello dear stranger, what is your name ?");
-            await this.choice(["Toto", "tata"], "name");
+            await this.wait(1500);
+
+            await this.addEntry(`Nice to meet you `);
+
+            // city not available
+            if (!this.state.player.city) {
+                await this.wait(1500);
+                await this.addEntry(`I have a question ...`);
+
+                await this.choice(["Go ahead"]);
+
+                await this.addEntry(`Why would you use and adblocker on a Ludum Dare game ?`);
+
+                await this.choice(["Why not.", "Why that question ?", "askforAdBlocker"]);
+
+                if (this.state.player.askForAdBlocker === "Why that question ?") {
+                    await this.wait(1000);
+                    await this.addEntry(`I ask the questions here`);
+                }
+
+            }
+
+            await this.addEntry(`How is it going on in ${this.state.player.city} ?`)
+
+            await this.choice(["It's fine", ""]);
+
+
+            await this.wait(1000);
+
+
 
         });
 
