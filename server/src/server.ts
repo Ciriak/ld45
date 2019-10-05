@@ -5,6 +5,8 @@ import { readJsonSync } from "fs-extra";
 import { MongoClient, Db } from "mongodb";
 import { join } from "path";
 import "./config.default.json";
+import Choice from "./Choice.js";
+import IApiResponse from "./interface/ApiResponse.js";
 
 const config = retrieveConfig();
 
@@ -53,49 +55,34 @@ async function connectDoDatabase() {
         }, 30000);
     });
 
-    const db = client.db("findpaper");
+    const db = client.db("missing-entry");
     console.log("Connected to the database");
     initApi(db);
 
 }
 
 function initApi(db: Db) {
-    // router.route('/search')
-    //     .get(async function (req, res) {
-    //         const route = new SearchRoute(req, db, scrapper);
-    //         try {
-    //             const data = await route.execute();
-    //             res.json(data);
-    //         } catch (error) {
-    //             let errorResponse: IApiResponse;
+    router.route('/choice')
+        .get(async function (req, res) {
+            const route = new Choice(req, db);
+            try {
+                const data = await route.get();
+                res.json(data);
+            } catch (error) {
+                let errorResponse: IApiResponse;
 
-    //             // show additional error info if debug parameter is enabled
-    //             if (route.parameters.debug.value === 'true') {
-    //                 errorResponse = {
-    //                     statusCode: 500,
-    //                     status: "error",
-    //                     needRetry: false,
-    //                     data: {
-    //                         message: error.message,
-    //                         stack: error.stack
-    //                     }
-    //                 }
-    //             }
-    //             else {
-    //                 errorResponse = {
-    //                     needRetry: false,
-    //                     statusCode: 500,
-    //                     status: "error",
-    //                     data: {
-    //                         message: error.message,
-    //                     }
-    //                 }
-    //             }
+                errorResponse = {
+                    statusCode: 500,
+                    status: "error",
+                    data: {
+                        message: error.message,
+                    }
+                }
 
-    //             res.json(errorResponse);
-    //         }
+                res.json(errorResponse);
+            }
 
-    //     })
+        })
 
 
     app.use(router);
