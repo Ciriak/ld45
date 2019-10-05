@@ -117,6 +117,7 @@ export default class Choice implements IChoice {
                 id: option.id,
                 label: option.label,
                 optionLabel: option.optionLabel,
+                imageUrl: option.imageUrl
             });
         }
 
@@ -125,7 +126,7 @@ export default class Choice implements IChoice {
             parentId: this.parentId,
             label: this.label,
             optionLabel: this.optionLabel,
-            options: this.options
+            options: options
         }
     }
 
