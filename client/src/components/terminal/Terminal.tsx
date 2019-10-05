@@ -6,15 +6,25 @@ import "./Terminal.scss"
 import Cursor from '../cursor/Cursor';
 import IPlayer from '../../interfaces/Player';
 import ChoiceOption from '../choice-option/ChoiceOption';
+import { Howl } from 'howler';
 import axios from 'axios';
 import * as config from "../../config.json";
+
+const history: IChoice[] = [];
 
 const nextSentencesStr = [
     "What do i do ?",
     "What happend next ?",
     "What will happend ?",
     "Choose what happend next :"
-]
+];
+
+const sounds: any = {
+    beep: null,
+    type: null,
+    change: null,
+    select: null
+};
 
 /**
  * Used to skip all timers
@@ -141,9 +151,13 @@ export default class Terminal extends React.Component<any, IState> {
         // Listen for enter key press
         window.addEventListener('keydown', this.handleEnterKey);
 
+        // Listen for back key press
+        window.addEventListener('keydown', this.handleBackKey);
+
         // Listen for enter key press
         window.addEventListener('keydown', this.handleChoiceKeys);
 
+        this.loadAudio();
 
         // launch the game
         this.Play();
@@ -161,6 +175,25 @@ export default class Terminal extends React.Component<any, IState> {
 
     randomNextSentence = () => {
         return nextSentencesStr[Math.floor(Math.random() * nextSentencesStr.length)]
+    }
+
+    loadAudio = () => {
+        sounds.beep = new Howl({
+            src: ['/audio/beep.wav']
+        });
+
+        sounds.type = new Howl({
+            src: ['/audio/type.wav']
+        });
+
+        sounds.change = new Howl({
+            src: ['/audio/change.wav']
+        });
+
+        sounds.select = new Howl({
+            src: ['/audio/select.wav']
+        });
+
     }
 
     wait = (delay: number) => {
@@ -208,6 +241,7 @@ export default class Terminal extends React.Component<any, IState> {
                 this.setImageUrl(choice.imageUrl);
             }
 
+            history.push(choice);
 
             this.setState({
                 choice: choice,
@@ -221,8 +255,10 @@ export default class Terminal extends React.Component<any, IState> {
 
     clear = () => {
         this.setState({
-            entries: []
+            entries: [],
+            displayChoices: false
         });
+        this.hideImage();
     }
 
     /**
@@ -285,6 +321,7 @@ export default class Terminal extends React.Component<any, IState> {
 
                 this.clear();
                 input.value = "";
+                sounds.select.play();
                 this.addEntry(this.state.choice.optionLabel + " , " + this.randomNextSentence());
 
                 return;
@@ -306,6 +343,7 @@ export default class Terminal extends React.Component<any, IState> {
                     waitingForImageUrl: true
                 })
                 input.value = "";
+                sounds.select.play();
                 this.clear();
                 this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
                 this.addUserEntry("Or just immediatly press [↵] to skip");
@@ -340,6 +378,7 @@ export default class Terminal extends React.Component<any, IState> {
                     waitingForImageUrl: false
                 })
                 input.value = "";
+                sounds.select.play();
                 // we can send the new choice
                 this.sendNewChoice(choice);
             }
@@ -348,6 +387,22 @@ export default class Terminal extends React.Component<any, IState> {
         }
 
 
+    }
+
+    handleBackKey = async (event: KeyboardEvent) => {
+
+        // stop if not enter key
+        if (event.key !== "Backspace") {
+            return;
+        }
+
+        // history is too short
+        if (history.length < 2) {
+            return;
+        }
+
+        //go back into the history
+        await this.requestChoice(history[history.length - 2].id);
     }
 
     /**
@@ -380,22 +435,27 @@ export default class Terminal extends React.Component<any, IState> {
             case "Tab":
                 valueIndex++;
                 event.preventDefault();
+                sounds.change.play();
                 break;
             case "ArrowUp":
                 valueIndex--;
                 event.preventDefault();
+                sounds.change.play();
                 break;
             case "ArrowLeft":
                 valueIndex--;
                 event.preventDefault();
+                sounds.change.play();
                 break;
             case "ArrowDown":
                 valueIndex++;
                 event.preventDefault();
+                sounds.change.play();
                 break;
             case "ArrowRight":
                 valueIndex++;
                 event.preventDefault();
+                sounds.change.play();
                 break;
             default:
                 break;
@@ -424,7 +484,7 @@ export default class Terminal extends React.Component<any, IState> {
 
         return new Promise(async (resolve) => {
             this.clear();
-
+            sounds.select.play();
             const option = this.state.choice.options[this.state.selectedOptionIndex];
 
             // if this is a missing entry, the user will be asked to use his imagination :)
@@ -478,6 +538,9 @@ export default class Terminal extends React.Component<any, IState> {
     requestChoice = (id: string) => {
 
         return new Promise(async (resolve) => {
+
+            this.clear();
+
             axios.get(config.apiAddress + "/choice?id=" + id)
                 .then(async res => {
                     const choice: IChoice = res.data;
@@ -530,6 +593,7 @@ export default class Terminal extends React.Component<any, IState> {
 
         return new Promise(async (resolve) => {
             await this.addEntry("... Booting ...");
+            sounds.beep.play();
             await this.addEntry(".");
             await this.addEntry(".");
             await this.wait(2000);
@@ -558,7 +622,7 @@ export default class Terminal extends React.Component<any, IState> {
         }
         for (let entryIndex = 0; entryIndex < this.state.entries.length; entryIndex++) {
             const entry = this.state.entries[entryIndex];
-            entries.push(<Entry data={entry} key={entryIndex} isLast={entryIndex === this.state.entries.length - 1} />);
+            entries.push(<Entry data={entry} key={entryIndex} sounds={sounds} isLast={entryIndex === this.state.entries.length - 1} />);
         }
 
         for (let optionIndex = 0; optionIndex < this.state.choice.options.length; optionIndex++) {

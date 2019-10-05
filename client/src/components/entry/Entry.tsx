@@ -5,12 +5,14 @@ import "./Entry.scss";
 interface IProps {
     data: ITerminalEntry;
     isLast?: boolean;
+    sounds: any;
 }
 
 interface IState {
     entry: ITerminalEntry,
     renderText: string;
     isLast?: boolean;
+    sounds: any;
 }
 
 export default class Entry extends React.Component<IProps, IState> {
@@ -19,7 +21,8 @@ export default class Entry extends React.Component<IProps, IState> {
         this.state = {
             entry: props.data,
             renderText: "",
-            isLast: props.isLast
+            isLast: props.isLast,
+            sounds: props.sounds
         }
     }
 
@@ -47,6 +50,7 @@ export default class Entry extends React.Component<IProps, IState> {
                 this.setState({
                     renderText: this.state.renderText + letter
                 });
+                this.state.sounds.type.play();
 
             }, timeoutValue);
 
