@@ -22,4 +22,5 @@ export default interface IChoice {
     options: IChoice[]
     active: boolean;
     missingEntry?: boolean;
+    imageUrl?: string;
 }

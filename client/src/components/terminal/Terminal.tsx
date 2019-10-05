@@ -26,6 +26,9 @@ interface IState {
     waitingForLabel: boolean;
     waitingForOptionLabel: boolean;
     displayChoices: boolean;
+    waitingForImageUrl: boolean;
+    imageUrl: string;
+    imageLoaded: boolean;
 }
 
 export default class Terminal extends React.Component<any, IState> {
@@ -38,7 +41,10 @@ export default class Terminal extends React.Component<any, IState> {
             optionInputActive: false,
             waitingForOptionLabel: false,
             waitingForLabel: false,
+            waitingForImageUrl: false,
             displayChoices: false,
+            imageLoaded: false,
+            imageUrl: "",
             choice: {
                 id: "default",
                 optionLabel: "",
@@ -110,6 +116,15 @@ export default class Terminal extends React.Component<any, IState> {
         this.setState({
             cursorActive: false
         })
+    }
+
+    /**
+     * Called when the terminal image is loaded
+     */
+    handleImageLoaded = () => {
+        this.setState({
+            imageLoaded: true
+        });
     }
 
 
@@ -203,6 +218,22 @@ export default class Terminal extends React.Component<any, IState> {
         });
     }
 
+    /**
+     * Called when the value of the input is changed
+     */
+    handleInputValueChange = () => {
+        if (this.state.waitingForImageUrl && input) {
+            this.setImageUrl(input.value);
+        }
+    }
+
+    setImageUrl = (url: string) => {
+        this.setState({
+            imageUrl: url,
+            imageLoaded: false
+        })
+    }
+
     handleEnterKey = (event: KeyboardEvent) => {
 
         // stop if not enter key
@@ -224,7 +255,8 @@ export default class Terminal extends React.Component<any, IState> {
                 this.setState({
                     choice: choice,
                     waitingForLabel: true,
-                    waitingForOptionLabel: false
+                    waitingForOptionLabel: false,
+                    waitingForImageUrl: false
                 });
 
                 this.clear();
@@ -239,8 +271,6 @@ export default class Terminal extends React.Component<any, IState> {
         // if valid, update the label
         if (this.state.waitingForLabel) {
 
-
-
             if (this.isValidInput(input.value)) {
                 const choice = this.state.choice;
                 choice.label = input.value;
@@ -248,11 +278,34 @@ export default class Terminal extends React.Component<any, IState> {
                 this.setState({
                     choice: choice,
                     waitingForLabel: false,
-                    waitingForOptionLabel: false
+                    waitingForOptionLabel: false,
+                    waitingForImageUrl: true
+                })
+                input.value = "";
+                this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
+            }
+            return;
+
+        }
+
+        // if valid, update the label
+        if (this.state.waitingForImageUrl) {
+
+
+
+            if (this.isValidInput(input.value)) {
+                const choice = this.state.choice;
+                choice.imageUrl = input.value;
+
+                this.setState({
+                    choice: choice,
+                    waitingForLabel: false,
+                    waitingForOptionLabel: false,
+                    waitingForImageUrl: false
                 })
                 input.value = "";
                 // we can send the new choice
-                this.sendNewChoice(this.state.choice);
+                this.sendNewChoice(choice);
             }
             return;
 
@@ -268,7 +321,6 @@ export default class Terminal extends React.Component<any, IState> {
         axios.post(config.apiAddress + "/choice", null, {
             params: choice
         }).then(async (res) => {
-            console.log(res);
             this.setState({
                 waitingForOptionLabel: false,
                 waitingForLabel: false,
@@ -438,7 +490,6 @@ export default class Terminal extends React.Component<any, IState> {
     Play = () => {
 
 
-        console.log("play");
 
         return new Promise(async (resolve) => {
 
@@ -449,7 +500,6 @@ export default class Terminal extends React.Component<any, IState> {
     }
 
     render = () => {
-        console.log("render")
         const entries = [];
         const options = [];
         for (let entryIndex = 0; entryIndex < this.state.entries.length; entryIndex++) {
@@ -458,7 +508,6 @@ export default class Terminal extends React.Component<any, IState> {
         }
 
         for (let optionIndex = 0; optionIndex < this.state.choice.options.length; optionIndex++) {
-            console.log("render", this.state.choice.options)
             const option = this.state.choice.options[optionIndex];
 
             option.active = false;
