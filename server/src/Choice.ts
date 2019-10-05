@@ -9,6 +9,7 @@ export default class Choice implements IChoice {
     parentId: string;
     ip: string;
     date: Date;
+    imageUrl: string;
     private database: Db;
 
     constructor(req: any, database: Db, ) {
@@ -39,6 +40,7 @@ export default class Choice implements IChoice {
                 this.id = result.id;
                 this.label = result.label;
                 this.optionLabel = result.optionLabel;
+                this.imageUrl = result.imageUrl;
 
                 // retrieve the options
                 const optionsQuery = {
@@ -82,7 +84,8 @@ export default class Choice implements IChoice {
                 options: [],
                 date: this.date,
                 ip: this.ip,
-                parentId: this.parentId
+                parentId: this.parentId,
+                imageUrl: this.imageUrl
 
             }
 

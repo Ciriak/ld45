@@ -19,5 +19,6 @@ export default interface IChoice {
     /**
      * Sub options
      */
-    options?: IChoice[]
+    options?: IChoice[];
+    imageUrl?: string;
 }
