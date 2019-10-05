@@ -58,15 +58,42 @@ async function connectDoDatabase() {
     const db = client.db("missing-entry");
     console.log("Connected to the database");
     initApi(db);
+    ensureFirstChoiceExist(db);
 
+}
+
+/**
+ * Ensure that the first choice exist or else nothing will work
+ * @param db 
+ */
+async function ensureFirstChoiceExist(db: Db) {
+    const collection = db.collection('choices');
+    const defaultChoice = await collection.findOne({
+        id: "default"
+    });
+
+    console.warn("Missing default choice, it will be created")
+    if (!defaultChoice) {
+        const query = {
+            id: "default",
+            date: new Date(),
+            label: "You start with nothing",
+            optionLabel: "",
+            parentId: ""
+        }
+        collection.insertOne(
+            query
+        );
+        console.log("Inserted a new default choice ");
+    }
 }
 
 function initApi(db: Db) {
     router.route('/choice')
         .get(async function (req, res) {
-            const route = new Choice(req, db);
+            const choice = new Choice(req, db);
             try {
-                const data = await route.get();
+                const data = await choice.get();
                 res.json(data);
             } catch (error) {
                 let errorResponse: IApiResponse;
@@ -82,7 +109,25 @@ function initApi(db: Db) {
                 res.json(errorResponse);
             }
 
-        })
+        }).post(async function (req, res) {
+            const choice = new Choice(req, db);
+            try {
+                const data = await choice.post(req);
+                res.json(data);
+            } catch (error) {
+                let errorResponse: IApiResponse;
+
+                errorResponse = {
+                    statusCode: 500,
+                    status: "error",
+                    data: {
+                        message: error.message,
+                    }
+                }
+
+                res.json(errorResponse);
+            }
+        });
 
 
     app.use(router);

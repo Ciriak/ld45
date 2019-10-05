@@ -1,7 +1,13 @@
-import IOption from "./Option";
 
 export default interface IChoice {
+    /**
+     * Unique id of the choice
+     */
     id: string;
+    /**
+     * ParentId
+     */
+    parentId?: string;
     /**
      * Label when this choice appear as an option
      */
@@ -10,10 +16,6 @@ export default interface IChoice {
      * Label when this choice has been selected
      */
     label: string;
-    /**
-     * ids of the sub options
-     */
-    optionsId?: string[]
     /**
      * Sub options
      */

@@ -1,13 +1,14 @@
 import IChoice from "./interface/Choice";
-import IOption from "./interface/Option";
 import { Db } from "mongodb";
 
 export default class Choice implements IChoice {
     optionLabel: string;
     label: string;
-    optionsId: string[];
     options: IChoice[];
     id: string;
+    parentId: string;
+    ip: string;
+    date: Date;
     private database: Db;
 
     constructor(req: any, database: Db, ) {
@@ -20,6 +21,9 @@ export default class Choice implements IChoice {
         }
     }
 
+    /**
+     * Retrieve the infos about the choice
+     */
     async get() {
         return new Promise<IChoice>(async (resolve, reject) => {
             const collection = this.database.collection('choices');
@@ -35,13 +39,12 @@ export default class Choice implements IChoice {
                 this.id = result.id;
                 this.label = result.label;
                 this.optionLabel = result.optionLabel;
-                this.optionsId = result.optionsId;
 
                 // retrieve the options
                 const optionsQuery = {
-                    id: this.optionsId
+                    parentId: this.id
                 }
-                collection.find(optionsQuery).toArray((err, results) => {
+                collection.find(optionsQuery).limit(3).toArray((err, results) => {
                     if (err) {
                         throw err;
                     }
@@ -57,6 +60,49 @@ export default class Choice implements IChoice {
     }
 
     /**
+     * Insert a new choice
+     */
+    async post(req: any) {
+        return new Promise<any>(async (resolve, reject) => {
+            const collection = this.database.collection('choices');
+
+
+            try {
+                this.validateChoicePost(req);
+                await this.ensureParentExist();
+            } catch (error) {
+                reject(error);
+                return;
+            }
+
+            const query: any = {
+                id: this.id,
+                label: this.label,
+                optionLabel: this.optionLabel,
+                options: [],
+                date: this.date,
+                ip: this.ip,
+                parentId: this.parentId
+
+            }
+
+            const result = await collection.insertOne(
+                query
+            );
+
+            if (result && result.insertedCount === 1) {
+                resolve(query);
+            }
+            else {
+                reject(new Error("Error while inserting the new choice"));
+            }
+
+
+        });
+
+    }
+
+    /**
      * Return the choice as a parsed result
      */
     private asReadableObject(): IChoice {
@@ -67,16 +113,78 @@ export default class Choice implements IChoice {
             options.push({
                 id: option.id,
                 label: option.label,
-                optionLabel: option.optionLabel
+                optionLabel: option.optionLabel,
             });
         }
 
         return {
             id: this.id,
+            parentId: this.parentId,
             label: this.label,
             optionLabel: this.optionLabel,
-            optionsId: this.optionsId,
             options: this.options
         }
     }
+
+    /**
+     * Check and validate the data of a choice post
+     * @param req 
+     */
+    private validateChoicePost(req: any) {
+
+        const query = req.query;
+        if (!query) {
+            throw new Error("Missing query parameter");
+        }
+
+        if (!query.label) {
+            throw new Error("Missing label parameter");
+        }
+
+        if (!query.optionLabel) {
+            throw new Error("Missing optionLabel parameter");
+        }
+
+        if (!query.parentId) {
+            throw new Error("Missing parent id");
+        }
+
+        this.optionLabel = query.optionLabel;
+        this.parentId = query.parentId;
+        this.label = query.label;
+        this.id = ID();
+        this.ip = req.ip;
+        this.date = new Date();
+        return true;
+    }
+
+    /**
+     * Ensure that the parent of the current choice exist
+     */
+    private async ensureParentExist() {
+        return new Promise<IChoice>(async (resolve, reject) => {
+            const collection = this.database.collection('choices');
+            const parent = await collection.findOne({
+                id: this.parentId
+            });
+
+            if (!parent) {
+                reject(new Error(`Unable to find the parent '${this.parentId}'`));
+                return;
+            }
+            resolve();
+
+
+        });
+
+    }
 }
+
+
+
+var ID = function () {
+    // Math.random should be unique because of its seeding algorithm.
+    // Convert it to base 36 (numbers + letters), and grab the first 9 characters
+    // after the decimal.
+    return '_' + Math.random().toString(36).substr(2, 9);
+};
