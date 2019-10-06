@@ -559,7 +559,11 @@ export default class Terminal extends React.Component<any, IState> {
 
                     await this.choice(choice);
 
-                }).catch((err) => {
+                }).catch(async (err) => {
+                    this.clear();
+                    this.addEntry("Unable to retrieve the data from the server");
+                    await this.wait(2000);
+                    this.addEntry("Try again in a few minutes");
                     resolve();
                 })
         });
