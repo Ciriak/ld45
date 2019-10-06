@@ -645,7 +645,7 @@ export default class Terminal extends React.Component<any, IState> {
             await this.addEntry(".");
             await this.addEntry(".");
             await this.wait(2000);
-            await this.addEntry("Made by Cyriaque DELAUNAY for the 45th Ludum Dare");
+            await this.addEntry("Made in 48h by Cyriaque DELAUNAY for the 45th Ludum Dare");
             this.setImageUrl("https://i.imgur.com/OVWg8TH.jpg");
             await this.wait(3000);
             this.hideImage();
