@@ -345,9 +345,15 @@ export default class Terminal extends React.Component<any, IState> {
                 input.value = "";
                 sounds.select.play();
                 this.clear();
-                await this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
+                await this.addUserEntry(this.state.choice.optionLabel);
+                await this.wait(500);
+                await this.addUserEntry("then");
                 await this.wait(1000);
-                await this.addUserEntry("Or just immediatly press [↵] to skip");
+                await this.addEntry(this.state.choice.label);
+                await this.wait(500);
+                await this.addEntry("If you want, you can add the url of an image that illustrate that");
+                await this.wait(500);
+                await this.addUserEntry("Or just immediatly press [↵] add your part of the story");
             }
             return;
 
@@ -397,6 +403,11 @@ export default class Terminal extends React.Component<any, IState> {
             return;
         }
 
+        // if the input is active, stop but do not kill the event
+        if (this.state.optionInputActive) {
+            return;
+        }
+
         event.preventDefault();
 
         // history is too short
@@ -415,6 +426,13 @@ export default class Terminal extends React.Component<any, IState> {
         axios.post(config.apiAddress + "/choice", null, {
             params: choice
         }).then(async (res) => {
+
+            if (res.data && res.data.status === "error") {
+                this.handleAddOptionError(res.data.data.message);
+                return;
+            }
+
+
             this.setState({
                 waitingForOptionLabel: false,
                 waitingForLabel: false,
@@ -425,15 +443,21 @@ export default class Terminal extends React.Component<any, IState> {
             await this.addEntry("...");
             this.createOption();
         }).catch(async (err) => {
-            this.clear();
-            this.addEntry("An error hapenned while adding your part of the story");
-            await this.wait(500);
-            await this.addEntry(err.message);
-            await this.wait(500);
-            await this.addEntry("Retrying in 3 seconds");
-            await this.wait(3000);
-            this.createOption();
+            this.handleAddOptionError(err.message);
+            return;
         });
+    }
+
+
+    handleAddOptionError = async (errorMessage: string) => {
+        this.clear();
+        this.addEntry("An error hapenned while adding your part of the story");
+        await this.wait(500);
+        await this.addEntry(errorMessage);
+        await this.wait(500);
+        await this.addEntry("Retrying in 3 seconds");
+        await this.wait(3000);
+        this.createOption(true);
     }
 
     handleChoiceKeys = (event: KeyboardEvent) => {
@@ -517,11 +541,17 @@ export default class Terminal extends React.Component<any, IState> {
     /**
      * Called when the user will create a new option
      */
-    createOption = async () => {
+    createOption = async (retry?: boolean) => {
         this.clear();
         const oldChoiceLabel = this.state.choice.label;
         await this.addEntry(oldChoiceLabel + " , " + this.randomNextSentence());
         this.enableCursor();
+
+        // if it's a retry, we don't change the parent id
+        let parentId: any = this.state.choice.id;
+        if (retry) {
+            parentId = this.state.choice.parentId;
+        }
 
         // create a new choice object
         const newChoice: IChoice = {
@@ -530,7 +560,7 @@ export default class Terminal extends React.Component<any, IState> {
             label: "",
             optionLabel: "",
             options: [],
-            parentId: this.state.choice.id
+            parentId: parentId
         }
         this.setState({
             choice: newChoice,

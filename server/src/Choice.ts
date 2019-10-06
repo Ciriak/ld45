@@ -165,9 +165,9 @@ export default class Choice implements IChoice {
         }
 
 
-        this.optionLabel = filter(query.optionLabel);
+        this.optionLabel = filter.clean(query.optionLabel);
         this.parentId = query.parentId;
-        this.label = filter(query.label);
+        this.label = filter.clean(query.label);
         this.id = ID();
         this.imageUrl = query.imageUrl;
         this.ip = req.ip;
