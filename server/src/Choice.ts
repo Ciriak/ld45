@@ -1,6 +1,8 @@
 import IChoice from "./interface/Choice";
 import { Db } from "mongodb";
 const Filter = require('bad-words');
+import moment from "moment";
+import { rejects } from "assert";
 const filter = new Filter();
 export default class Choice implements IChoice {
     optionLabel: string;
@@ -73,6 +75,7 @@ export default class Choice implements IChoice {
             try {
                 this.validateChoicePost(req);
                 await this.ensureParentExist();
+                await this.checkForSpam();
             } catch (error) {
                 reject(error);
                 return;
@@ -199,7 +202,44 @@ export default class Choice implements IChoice {
         });
 
     }
+
+    /**
+     * Check if the ip has been used too many time recently
+     */
+    private async checkForSpam() {
+        return new Promise<IChoice>(async (resolve, reject) => {
+            const collection = this.database.collection('choices');
+
+            const date = moment(new Date()).subtract(2, 'minutes').toDate();
+
+            collection.find({
+                ip: this.ip,
+                date: {
+                    $gte: date
+                }
+            }).toArray((err, results) => {
+
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                if (results.length > 3) {
+                    reject(new Error("Wow you added a lot of entries ! Please try again in 2 minutes"));
+                    return;
+                }
+
+
+
+                resolve();
+
+
+            });
+
+        });
+    }
 }
+
 
 
 
