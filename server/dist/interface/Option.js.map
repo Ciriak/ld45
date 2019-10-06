@@ -1,0 +1,1 @@
+{"version":3,"file":"Option.js","sourceRoot":"","sources":["../../src/interface/Option.ts"],"names":[],"mappings":"","sourcesContent":["export default interface IOption {\r\n    choiceId: string;\r\n    label: string;\r\n}"]}
