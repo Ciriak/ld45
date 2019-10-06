@@ -8,6 +8,10 @@ const App: React.FC = () => {
       <Terminal />
       <div className="controls-helper">
         <div className="control">
+          <div className="key">🠘   </div>
+          <span className="label">Return to previous choice</span>
+        </div>
+        <div className="control">
           <div className="key">🠘 🠚 🠙 🠛</div>
           <span className="label">Select / navigate</span>
         </div>

@@ -180,19 +180,19 @@ export default class Terminal extends React.Component<any, IState> {
 
     loadAudio = () => {
         sounds.beep = new Howl({
-            src: ['/audio/beep.wav']
+            src: ['./audio/beep.wav']
         });
 
         sounds.type = new Howl({
-            src: ['/audio/type.wav']
+            src: ['./audio/type.wav']
         });
 
         sounds.change = new Howl({
-            src: ['/audio/change.wav']
+            src: ['./audio/change.wav']
         });
 
         sounds.select = new Howl({
-            src: ['/audio/select.wav']
+            src: ['./audio/select.wav']
         });
 
     }
@@ -242,12 +242,16 @@ export default class Terminal extends React.Component<any, IState> {
                 this.setImageUrl(choice.imageUrl);
             }
 
-            history.push(choice);
-
             this.setState({
                 choice: choice,
                 displayChoices: true
             });
+
+            // only add entry if not already in
+            if (!history[history.length - 1] || history[history.length - 1].id !== choice.id) {
+                history.push(choice);
+            }
+
 
             resolve();
 
@@ -417,7 +421,14 @@ export default class Terminal extends React.Component<any, IState> {
         }
 
         //go back into the history
-        await this.requestChoice(history[history.length - 2].id, true);
+
+        history.pop();
+        let historyIndex = history.length - 1;
+        if (!history[historyIndex]) {
+            historyIndex = 0;
+        }
+
+        await this.requestChoice(history[historyIndex].id);
     }
 
     /**
@@ -573,17 +584,11 @@ export default class Terminal extends React.Component<any, IState> {
 
     }
 
-    requestChoice = (id: string, cleanHistory?: boolean) => {
+    requestChoice = (id: string, ) => {
 
         return new Promise(async (resolve) => {
 
             this.clear();
-
-            // remove an history entry if this is from a go back
-            if (cleanHistory) {
-                history.pop();  //remove last entry
-            }
-
 
             axios.get(config.apiAddress + "/choice?id=" + id)
                 .then(async res => {
@@ -596,6 +601,7 @@ export default class Terminal extends React.Component<any, IState> {
                     await this.choice(choice);
 
                 }).catch(async (err) => {
+                    console.log(err);
                     this.clear();
                     this.addEntry("Unable to retrieve the data from the server");
                     await this.wait(2000);
