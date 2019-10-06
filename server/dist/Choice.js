@@ -145,12 +145,16 @@ class Choice {
         }
         // clean option label from common mistake
         query.optionLabel = query.optionLabel.replace("I I", "I").replace("I i", "I");
+        let ip = "127.0.0.1";
+        if (req.connection && req.connection.remoteAddress) {
+            ip = req.connection.remoteAddress;
+        }
         this.optionLabel = filter.clean(query.optionLabel);
         this.parentId = query.parentId;
         this.label = filter.clean(query.label);
         this.id = ID();
         this.imageUrl = query.imageUrl;
-        this.ip = req.ip;
+        this.ip = ip;
         this.date = new Date();
         return true;
     }
