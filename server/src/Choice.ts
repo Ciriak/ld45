@@ -165,6 +165,9 @@ export default class Choice implements IChoice {
             throw new Error("Missing parent id");
         }
 
+        // clean option label from common mistake
+        query.optionLabel = query.optionLabel.replace("I I", "I").replace("I i", "I");
+
 
         this.optionLabel = filter.clean(query.optionLabel);
         this.parentId = query.parentId;

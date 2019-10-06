@@ -442,8 +442,8 @@ export default class Terminal extends React.Component<any, IState> {
             this.clear();
             await this.wait(2000);
             await this.addEntry("...");
-            const resChoice = res;
-            this.createOption(resChoice.data.parentId)
+            // go back to the parent after the option has been added
+            this.requestChoice(res.data.parentId);
         }).catch(async (err) => {
             this.handleAddOptionError(err.message);
             return;
