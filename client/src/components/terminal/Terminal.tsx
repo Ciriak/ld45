@@ -13,10 +13,10 @@ import * as config from "../../config.json";
 const history: IChoice[] = [];
 
 const nextSentencesStr = [
-    "What do i do ?",
-    "What happend next ?",
-    "What will happend ?",
-    "Choose what happend next :"
+    "and then ?",
+    "what happend next ?",
+    "what will happend ?",
+    "choose what happend next :"
 ];
 
 const sounds: any = {
@@ -67,7 +67,8 @@ export default class Terminal extends React.Component<any, IState> {
                 optionLabel: "",
                 label: "I start with nothing",
                 active: false,
-                options: []
+                options: [],
+                parentId: ""
             },
             selectedOptionIndex: 0
         }
@@ -441,7 +442,8 @@ export default class Terminal extends React.Component<any, IState> {
             this.clear();
             await this.wait(2000);
             await this.addEntry("...");
-            this.createOption();
+            const resChoice = res;
+            this.createOption(resChoice.data.parentId)
         }).catch(async (err) => {
             this.handleAddOptionError(err.message);
             return;
@@ -457,7 +459,7 @@ export default class Terminal extends React.Component<any, IState> {
         await this.wait(500);
         await this.addEntry("Retrying in 3 seconds");
         await this.wait(3000);
-        this.createOption(true);
+        this.createOption(this.state.choice.id);
     }
 
     handleChoiceKeys = (event: KeyboardEvent) => {
@@ -523,7 +525,8 @@ export default class Terminal extends React.Component<any, IState> {
 
             // if this is a missing entry, the user will be asked to use his imagination :)
             if (option.missingEntry) {
-                this.createOption();
+
+                this.createOption(this.state.choice.id);
             }
             else {
                 this.requestChoice(option.id);
@@ -541,17 +544,11 @@ export default class Terminal extends React.Component<any, IState> {
     /**
      * Called when the user will create a new option
      */
-    createOption = async (retry?: boolean) => {
+    createOption = async (parentId: string) => {
         this.clear();
         const oldChoiceLabel = this.state.choice.label;
         await this.addEntry(oldChoiceLabel + " , " + this.randomNextSentence());
         this.enableCursor();
-
-        // if it's a retry, we don't change the parent id
-        let parentId: any = this.state.choice.id;
-        if (retry) {
-            parentId = this.state.choice.parentId;
-        }
 
         // create a new choice object
         const newChoice: IChoice = {
@@ -562,6 +559,7 @@ export default class Terminal extends React.Component<any, IState> {
             options: [],
             parentId: parentId
         }
+
         this.setState({
             choice: newChoice,
             optionInputActive: true,
@@ -569,7 +567,7 @@ export default class Terminal extends React.Component<any, IState> {
         });
         input = document.getElementById("option-input") as HTMLInputElement;
         if (input) {
-            input.value = "";
+            input.value = "I ";
             input.focus();
         }
 

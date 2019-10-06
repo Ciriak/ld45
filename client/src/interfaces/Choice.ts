@@ -7,7 +7,7 @@ export default interface IChoice {
     /**
      * ParentId
      */
-    parentId?: string;
+    parentId: string;
     /**
      * Label when this choice appear as an option
      */

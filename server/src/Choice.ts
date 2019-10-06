@@ -154,10 +154,11 @@ export default class Choice implements IChoice {
         if (query.optionLabel.length < 5 || query.label.length < 5 || query.optionLabel.length > 200 || query.label.length > 200) {
             throw new Error("All the text must be between 5 and 200 characters");
         }
+        // query.optionLabel.substr(0, 2).toLowerCase() === "i "
 
         // check if first person
-        if (query.label.substr(0, 3).toLowerCase() === "you" || query.optionLabel.substr(0, 3).toLowerCase() === "you") {
-            throw new Error("Please only use first person - ex : 'I' not 'You'");
+        if (query.optionLabel.substr(0, 2).toLowerCase() !== "i ") {
+            throw new Error("Please only use first person ('I ...') to describe what you do");
         }
 
         if (!query.parentId) {
