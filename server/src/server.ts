@@ -12,7 +12,7 @@ const config = retrieveConfig();
 
 const dbUrl = config.databaseUrl;
 const hostname = config.hostname;
-const port = config.port;
+const port = process.env.PORT || config.port;
 
 const app = express();
 const router = express.Router();
