@@ -1,6 +1,7 @@
 import IChoice from "./interface/Choice";
 import { Db } from "mongodb";
-
+const Filter = require('bad-words');
+const filter = new Filter();
 export default class Choice implements IChoice {
     optionLabel: string;
     label: string;
@@ -150,13 +151,23 @@ export default class Choice implements IChoice {
             throw new Error("Missing optionLabel parameter");
         }
 
+        if (query.optionLabel.length < 5 || query.label.length < 5 || query.optionLabel.length > 200 || query.label.length > 200) {
+            throw new Error("All the text must be between 5 and 200 characters");
+        }
+
+        // check if first person
+        if (query.label.substr(0, 3).toLowerCase() === "you" || query.optionLabel.substr(0, 3).toLowerCase() === "you") {
+            throw new Error("Please only use first person - ex : 'I' not 'You'");
+        }
+
         if (!query.parentId) {
             throw new Error("Missing parent id");
         }
 
-        this.optionLabel = query.optionLabel;
+
+        this.optionLabel = filter(query.optionLabel);
         this.parentId = query.parentId;
-        this.label = query.label;
+        this.label = filter(query.label);
         this.id = ID();
         this.imageUrl = query.imageUrl;
         this.ip = req.ip;
