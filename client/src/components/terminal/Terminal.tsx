@@ -475,6 +475,11 @@ export default class Terminal extends React.Component<any, IState> {
 
     handleChoiceKeys = (event: KeyboardEvent) => {
 
+        // do nothing if choices are not available
+        if (!this.state.displayChoices) {
+            return;
+        }
+
         let valueIndex = this.state.selectedOptionIndex;
         const numOfOptions = this.state.choice.options.length;
 
