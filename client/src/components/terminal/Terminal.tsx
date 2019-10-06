@@ -294,7 +294,7 @@ export default class Terminal extends React.Component<any, IState> {
         })
     }
 
-    handleEnterKey = (event: KeyboardEvent) => {
+    handleEnterKey = async (event: KeyboardEvent) => {
 
         // stop if not enter key
         if (event.key !== "Enter") {
@@ -345,8 +345,9 @@ export default class Terminal extends React.Component<any, IState> {
                 input.value = "";
                 sounds.select.play();
                 this.clear();
-                this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
-                this.addUserEntry("Or just immediatly press [↵] to skip");
+                await this.addEntry(this.state.choice.label + " : if you want, you can add the url of an image that illustrate that");
+                await this.wait(1000);
+                await this.addUserEntry("Or just immediatly press [↵] to skip");
             }
             return;
 
@@ -423,8 +424,15 @@ export default class Terminal extends React.Component<any, IState> {
             await this.wait(2000);
             await this.addEntry("...");
             this.createOption();
-        }).catch((err) => {
-            console.log(err);
+        }).catch(async (err) => {
+            this.clear();
+            this.addEntry("An error hapenned while adding your part of the story");
+            await this.wait(500);
+            await this.addEntry(err.message);
+            await this.wait(500);
+            await this.addEntry("Retrying in 3 seconds");
+            await this.wait(3000);
+            this.createOption();
         });
     }
 
