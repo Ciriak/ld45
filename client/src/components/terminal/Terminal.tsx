@@ -14,9 +14,9 @@ const history: IChoice[] = [];
 
 const nextSentencesStr = [
     "and then ?",
-    "what happend next ?",
-    "what will happend ?",
-    "choose what happend next :"
+    "what happens next ?",
+    "what will happens ?",
+    "choose what happens next :"
 ];
 
 const sounds: any = {
