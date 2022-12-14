@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "bad-words": "^3.0.3",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "fs-extra": "^8.1.0",
     "moment": "^2.24.0",
     "mongodb": "^3.3.2",
